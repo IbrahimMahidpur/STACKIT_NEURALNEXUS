@@ -1,15 +1,13 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, X, Bold, Italic, List, Link as LinkIcon, Image, Smile } from 'lucide-react';
+import { ArrowLeft, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import Header from '@/components/Header';
 import RichTextEditor from '@/components/RichTextEditor';
+import Dashboard from '@/components/Dashboard';
 
 const AskQuestion = () => {
   const navigate = useNavigate();
@@ -59,12 +57,10 @@ const AskQuestion = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+    <Dashboard>
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
@@ -220,8 +216,8 @@ const AskQuestion = () => {
             </Button>
           </div>
         </form>
-      </main>
-    </div>
+      </div>
+    </Dashboard>
   );
 };
 
