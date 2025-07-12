@@ -2,25 +2,55 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/9d006b36-b9ea-4b42-9281-36e02aa3334c
+# 🧠 StackIt – Minimal Q&A Platform for Collaborative Learning
 
-## How can I edit this code?
+**StackIt** is a sleek, minimalistic question-and-answer platform built to support structured knowledge sharing within communities. It’s designed for speed, simplicity, and an exceptional user experience — perfect for students, developers, and domain-specific knowledge hubs.
 
-There are several ways of editing your application.
+![Demo Screenshot](Screenshot 2025-07-12 at 11.47.01 AM.png)
 
-**Use Lovable**
+## 🚀 Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/9d006b36-b9ea-4b42-9281-36e02aa3334c) and start prompting.
+### 👤 User Roles
+- **Guest** – View questions & answers
+- **User** – Register, log in, post questions & answers, vote
+- **Admin** – Moderate content
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🔧 Core Functionality
+- **Ask Questions** with:
+  - 📌 Title
+  - 📝 Rich-text description (Markdown-style editor with emoji, links, images, lists, text alignment)
+  - 🏷️ Tags (multi-select input)
+- **Answer Questions** with full formatting support
+- **Voting System** (upvote/downvote)
+- **Accept Answers** by question author
+- **Mention Support** (`@username`) for notifications
+- **Notification Bell** 🔔 for real-time alerts
+- **Tag Filtering** to browse specific domains
+- **Accessibility Compliant** (WCAG standards)
 
-**Use your preferred IDE**
+### ✨ Tech Highlights
+This project is built with:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-Follow these steps:
+## 📸 Demo Video
+
+
+
+
+
+## 🛠️ Getting Started
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/your-username/stackit.git
+cd stackit
+
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
@@ -36,38 +66,5 @@ npm i
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/9d006b36-b9ea-4b42-9281-36e02aa3334c) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
