@@ -6,7 +6,6 @@
 
 **StackIt** is a sleek, minimalistic question-and-answer platform built to support structured knowledge sharing within communities. It’s designed for speed, simplicity, and an exceptional user experience — perfect for students, developers, and domain-specific knowledge hubs.
 
-![Demo Screenshot](Screenshot 2025-07-12 at 11.47.01 AM.png)
 
 ## 🚀 Features
 
