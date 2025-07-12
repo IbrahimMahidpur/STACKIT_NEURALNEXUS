@@ -10,12 +10,9 @@ import {
   BarChart3,
   Moon,
   Sun,
-  Bell,
-  Search,
   Filter
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -25,26 +22,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchBar } from './SearchBar';
+import { NotificationDropdown } from './NotificationDropdown';
+import { useToast } from '@/hooks/use-toast';
 
 interface DashboardProps {
   children: React.ReactNode;
 }
 
+export interface FilterOptions {
+  sortBy: 'newest' | 'votes' | 'views' | 'activity';
+  timeRange: 'day' | 'week' | 'month' | 'year' | 'all';
+  status: 'all' | 'unanswered' | 'answered' | 'accepted';
+}
+
 const Dashboard = ({ children }: DashboardProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [notificationCount, setNotificationCount] = useState(3);
+  const [filters, setFilters] = useState<FilterOptions>({
+    sortBy: 'newest',
+    timeRange: 'all',
+    status: 'all'
+  });
 
   const navigationItems = [
-    { id: 'home', label: 'Home', icon: Home, path: '/' },
-    { id: 'questions', label: 'Questions', icon: MessageSquare, path: '/questions' },
-    { id: 'tags', label: 'Tags', icon: Tags, path: '/tags' },
-    { id: 'users', label: 'Users', icon: Users, path: '/users' },
-    { id: 'trending', label: 'Trending', icon: TrendingUp, path: '/trending' },
-    { id: 'stats', label: 'Stats', icon: BarChart3, path: '/stats' }
+    { id: 'home', label: 'Home', icon: Home, path: '/', count: null },
+    { id: 'questions', label: 'Questions', icon: MessageSquare, path: '/questions', count: 12543 },
+    { id: 'tags', label: 'Tags', icon: Tags, path: '/tags', count: 1520 },
+    { id: 'users', label: 'Users', icon: Users, path: '/users', count: 5643 },
+    { id: 'trending', label: 'Trending', icon: TrendingUp, path: '/trending', count: null },
+    { id: 'stats', label: 'Stats', icon: BarChart3, path: '/stats', count: null }
   ];
 
   const popularTags = [
@@ -66,9 +75,27 @@ const Dashboard = ({ children }: DashboardProps) => {
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
+    toast({
+      title: isDarkMode ? 'Light mode enabled' : 'Dark mode enabled',
+      description: `Switched to ${isDarkMode ? 'light' : 'dark'} theme`
+    });
   };
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleFilterChange = (filterType: keyof FilterOptions, value: string) => {
+    const newFilters = { ...filters, [filterType]: value };
+    setFilters(newFilters);
+    
+    toast({
+      title: 'Filter applied',
+      description: `Sorted by ${value}`
+    });
+
+    // You can emit an event or call a callback here to notify parent components
+    // For now, we'll just update the state
+    console.log('Applied filters:', newFilters);
+  };
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
@@ -85,11 +112,18 @@ const Dashboard = ({ children }: DashboardProps) => {
               <Button
                 key={item.id}
                 variant={isActive(item.path) ? "default" : "ghost"}
-                className="w-full justify-start"
+                className="w-full justify-between"
                 onClick={() => navigate(item.path)}
               >
-                <item.icon className="w-4 h-4 mr-3" />
-                {item.label}
+                <div className="flex items-center">
+                  <item.icon className="w-4 h-4 mr-3" />
+                  {item.label}
+                </div>
+                {item.count && (
+                  <Badge variant="secondary" className="text-xs">
+                    {item.count.toLocaleString()}
+                  </Badge>
+                )}
               </Button>
             ))}
           </nav>
@@ -105,7 +139,7 @@ const Dashboard = ({ children }: DashboardProps) => {
                   <Badge 
                     variant="secondary" 
                     className={`cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors ${
-                      tag.trending ? 'border-orange-200 bg-orange-50 text-orange-700' : ''
+                      tag.trending ? 'border-orange-200 bg-orange-50 text-orange-700 dark:bg-orange-950/30 dark:text-orange-300' : ''
                     }`}
                     onClick={() => navigate(`/tags/${tag.name}`)}
                   >
@@ -136,8 +170,8 @@ const Dashboard = ({ children }: DashboardProps) => {
                 <span className="font-medium">{communityStats.totalUsers.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-green-600">Active Today</span>
-                <span className="font-medium text-green-600">{communityStats.activeToday}</span>
+                <span className="text-green-600 dark:text-green-400">Active Today</span>
+                <span className="font-medium text-green-600 dark:text-green-400">{communityStats.activeToday}</span>
               </div>
             </div>
           </div>
@@ -150,42 +184,65 @@ const Dashboard = ({ children }: DashboardProps) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4 flex-1">
                 {/* Search */}
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search questions, tags, users..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
+                <div className="flex-1 max-w-md">
+                  <SearchBar />
                 </div>
 
                 {/* Filters */}
-                <Select value={activeFilter} onValueChange={setActiveFilter}>
-                  <SelectTrigger className="w-32">
-                    <Filter className="w-4 h-4 mr-2" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="unanswered">Unanswered</SelectItem>
-                    <SelectItem value="recent">Recent</SelectItem>
-                    <SelectItem value="votes">Most Votes</SelectItem>
-                    <SelectItem value="views">Most Views</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center space-x-2">
+                  <Filter className="w-4 h-4 text-muted-foreground" />
+                  
+                  <Select 
+                    value={filters.sortBy} 
+                    onValueChange={(value) => handleFilterChange('sortBy', value)}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Newest</SelectItem>
+                      <SelectItem value="votes">Most Votes</SelectItem>
+                      <SelectItem value="views">Most Views</SelectItem>
+                      <SelectItem value="activity">Recent Activity</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select 
+                    value={filters.timeRange} 
+                    onValueChange={(value) => handleFilterChange('timeRange', value)}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="day">Today</SelectItem>
+                      <SelectItem value="week">This Week</SelectItem>
+                      <SelectItem value="month">This Month</SelectItem>
+                      <SelectItem value="year">This Year</SelectItem>
+                      <SelectItem value="all">All Time</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select 
+                    value={filters.status} 
+                    onValueChange={(value) => handleFilterChange('status', value)}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Questions</SelectItem>
+                      <SelectItem value="unanswered">Unanswered</SelectItem>
+                      <SelectItem value="answered">Answered</SelectItem>
+                      <SelectItem value="accepted">Accepted Answer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex items-center space-x-4">
                 {/* Notifications */}
-                <Button variant="ghost" size="sm" className="relative">
-                  <Bell className="w-4 h-4" />
-                  {notificationCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 w-5 h-5 text-xs flex items-center justify-center p-0">
-                      {notificationCount}
-                    </Badge>
-                  )}
-                </Button>
+                <NotificationDropdown />
 
                 {/* Dark Mode Toggle */}
                 <Button variant="ghost" size="sm" onClick={toggleDarkMode}>

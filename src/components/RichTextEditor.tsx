@@ -95,17 +95,18 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
   const commonEmojis = ['😀', '😂', '🤔', '👍', '👎', '❤️', '🔥', '💯', '🎉', '🚀'];
 
   return (
-    <div className="border border-gray-200 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2 border-b border-gray-200 bg-gray-50">
+    <div className="border border-border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:border-transparent">
+      {/* Toolbar - Updated for better dark mode visibility */}
+      <div className="flex flex-wrap items-center gap-1 p-2 border-b border-border bg-muted/50">
         {/* Text Formatting */}
-        <div className="flex items-center gap-1 pr-2 border-r border-gray-300">
+        <div className="flex items-center gap-1 pr-2 border-r border-border">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => formatText('bold')}
             title="Bold"
+            className="hover:bg-accent hover:text-accent-foreground"
           >
             <Bold className="w-4 h-4" />
           </Button>
@@ -115,6 +116,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
             size="sm"
             onClick={() => formatText('italic')}
             title="Italic"
+            className="hover:bg-accent hover:text-accent-foreground"
           >
             <Italic className="w-4 h-4" />
           </Button>
@@ -124,19 +126,21 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
             size="sm"
             onClick={() => formatText('strikethrough')}
             title="Strikethrough"
+            className="hover:bg-accent hover:text-accent-foreground"
           >
             <Strikethrough className="w-4 h-4" />
           </Button>
         </div>
 
         {/* Lists */}
-        <div className="flex items-center gap-1 pr-2 border-r border-gray-300">
+        <div className="flex items-center gap-1 pr-2 border-r border-border">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => formatText('unordered-list')}
             title="Bullet List"
+            className="hover:bg-accent hover:text-accent-foreground"
           >
             <List className="w-4 h-4" />
           </Button>
@@ -146,20 +150,21 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
             size="sm"
             onClick={() => formatText('ordered-list')}
             title="Numbered List"
+            className="hover:bg-accent hover:text-accent-foreground"
           >
             <ListOrdered className="w-4 h-4" />
           </Button>
         </div>
 
         {/* Code */}
-        <div className="flex items-center gap-1 pr-2 border-r border-gray-300">
+        <div className="flex items-center gap-1 pr-2 border-r border-border">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => formatText('code')}
             title="Inline Code"
-            className="font-mono text-xs"
+            className="font-mono text-xs hover:bg-accent hover:text-accent-foreground"
           >
             {'</>'}
           </Button>
@@ -169,7 +174,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
             size="sm"
             onClick={() => formatText('code-block')}
             title="Code Block"
-            className="font-mono text-xs"
+            className="font-mono text-xs hover:bg-accent hover:text-accent-foreground"
           >
             {'{}'}
           </Button>
@@ -183,6 +188,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
               variant="ghost"
               size="sm"
               title="Insert Link"
+              className="hover:bg-accent hover:text-accent-foreground"
             >
               <LinkIcon className="w-4 h-4" />
             </Button>
@@ -225,6 +231,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
               variant="ghost"
               size="sm"
               title="Insert Image"
+              className="hover:bg-accent hover:text-accent-foreground"
             >
               <Image className="w-4 h-4" />
             </Button>
@@ -267,6 +274,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
               variant="ghost"
               size="sm"
               title="Insert Emoji"
+              className="hover:bg-accent hover:text-accent-foreground"
             >
               <Smile className="w-4 h-4" />
             </Button>
@@ -283,7 +291,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
                   variant="ghost"
                   size="sm"
                   onClick={() => insertEmoji(emoji)}
-                  className="text-lg h-10 w-10"
+                  className="text-lg h-10 w-10 hover:bg-accent"
                 >
                   {emoji}
                 </Button>
@@ -300,17 +308,17 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="min-h-[200px] border-0 focus-visible:ring-0 resize-none"
+          className="min-h-[200px] border-0 focus-visible:ring-0 resize-none bg-background text-foreground"
         />
         
         {/* Character count */}
-        <div className="absolute bottom-2 right-2 text-xs text-gray-400">
+        <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
           {value.length} characters
         </div>
       </div>
 
       {/* Preview hint */}
-      <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-600">
+      <div className="px-3 py-2 bg-muted/50 border-t border-border text-xs text-muted-foreground">
         Supports Markdown formatting. Use **bold**, *italic*, `code`, and more.
       </div>
     </div>
