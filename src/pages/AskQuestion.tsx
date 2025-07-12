@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, X } from 'lucide-react';
+import { ArrowLeft, Plus, X, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -8,14 +8,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import RichTextEditor from '@/components/RichTextEditor';
 import Dashboard from '@/components/Dashboard';
+import { useRealtimeQuestions } from '@/hooks/useRealtimeQuestions';
+import { toast } from 'sonner';
 
 const AskQuestion = () => {
   const navigate = useNavigate();
+  const { handlePublishQuestion, isLoading, isConnected } = useRealtimeQuestions();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const popularTags = [
     'javascript', 'react', 'nodejs', 'python', 'css', 'html',
@@ -44,16 +46,33 @@ const AskQuestion = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim() || tags.length === 0) {
+      toast.error('Please fill in all required fields');
       return;
     }
 
-    setIsSubmitting(true);
+    if (!isConnected) {
+      toast.error('Not connected to real-time service. Please check your connection.');
+      return;
+    }
+
+    const questionData = {
+      title: title.trim(),
+      description: description.trim(),
+      tags,
+      author: {
+        name: "Current User", // This would come from auth context
+        avatar: "/placeholder.svg",
+        reputation: 100,
+        joinDate: "2024-01-01"
+      }
+    };
+
+    const success = await handlePublishQuestion(questionData);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Navigate back to home or to the new question
-    navigate('/');
+    if (success) {
+      // Navigate back to home or to the new question
+      navigate('/');
+    }
   };
 
   return (
@@ -65,9 +84,23 @@ const AskQuestion = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold text-gray-900">Ask a Question</h1>
             <p className="text-gray-600 mt-1">Get help from our community of developers</p>
+          </div>
+          {/* Connection Status */}
+          <div className="flex items-center gap-2">
+            {isConnected ? (
+              <div className="flex items-center gap-1 text-green-600">
+                <Wifi className="w-4 h-4" />
+                <span className="text-sm">Live</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-red-600">
+                <WifiOff className="w-4 h-4" />
+                <span className="text-sm">Offline</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -202,10 +235,10 @@ const AskQuestion = () => {
           <div className="flex gap-4">
             <Button
               type="submit"
-              disabled={!title.trim() || !description.trim() || tags.length === 0 || isSubmitting}
+              disabled={!title.trim() || !description.trim() || tags.length === 0 || isLoading || !isConnected}
               className="px-8"
             >
-              {isSubmitting ? 'Publishing...' : 'Publish Question'}
+              {isLoading ? 'Publishing...' : 'Publish Question'}
             </Button>
             <Button
               type="button"

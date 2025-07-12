@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, Eye, MessageSquare, ArrowUp, Check, User, Search, TrendingUp, LogIn, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,14 +10,28 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Dashboard from '@/components/Dashboard';
 import { AuthDialog } from '@/components/AuthDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRealtimeQuestions } from '@/hooks/useRealtimeQuestions';
+import RealTimeIndicator from '@/components/RealTimeIndicator';
+import RealTimeNotification from '@/components/RealTimeNotification';
+
+interface Notification {
+  id: string;
+  type: 'question' | 'answer';
+  title: string;
+  author: string;
+  timestamp: Date;
+  questionId?: number;
+}
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isConnected, questions: realtimeQuestions } = useRealtimeQuestions();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   
-  const [featuredQuestions] = useState([
+  const [featuredQuestions, setFeaturedQuestions] = useState([
     {
       id: 1,
       title: "How to implement a binary search tree in JavaScript?",
@@ -57,27 +71,40 @@ const Index = () => {
     }
   ]);
 
+  // Add real-time questions to featured questions
+  useEffect(() => {
+    if (realtimeQuestions.length > 0) {
+      const newQuestions = realtimeQuestions.map(q => ({
+        id: q.id,
+        title: q.title,
+        excerpt: q.description.substring(0, 100) + "...",
+        tags: q.tags,
+        author: q.author,
+        votes: q.votes,
+        answers: 0,
+        views: q.views,
+        timeAgo: q.timeAgo,
+        accepted: false,
+        isNew: true
+      }));
+      
+      setFeaturedQuestions(prev => [...newQuestions, ...prev.slice(0, 2)]);
+    }
+  }, [realtimeQuestions]);
+
   const quickStats = {
-    totalQuestions: 12543,
+    totalQuestions: 12543 + realtimeQuestions.length,
     answeredToday: 89,
     activeUsers: 234,
     newMembers: 12
   };
 
   const handleQuestionClick = (id: number) => {
-    if (!user) {
-      setShowAuthDialog(true);
-      return;
-    }
     navigate(`/question/${id}`);
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
-      setShowAuthDialog(true);
-      return;
-    }
     if (searchQuery.trim()) {
       navigate(`/questions?search=${encodeURIComponent(searchQuery)}`);
     }
@@ -91,15 +118,42 @@ const Index = () => {
     action();
   };
 
+  const handleDismissNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleViewQuestion = (questionId: number) => {
+    navigate(`/question/${questionId}`);
+  };
+
   return (
     <Dashboard>
+      {/* Real-time Notifications */}
+      <RealTimeNotification
+        notifications={notifications}
+        onDismiss={handleDismissNotification}
+        onViewQuestion={handleViewQuestion}
+      />
+
       <div className="space-y-8">
         {/* Welcome Section */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold">Welcome to StackIt</h1>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <h1 className="text-4xl font-bold">Welcome to StackIt</h1>
+            <RealTimeIndicator 
+              isConnected={isConnected} 
+              activeUsers={quickStats.activeUsers}
+              showStatus={true}
+            />
+          </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Your collaborative learning platform where developers help developers. 
             Ask questions, share knowledge, and grow together.
+            {isConnected && (
+              <span className="block text-sm text-green-600 mt-2">
+                ✨ Real-time updates enabled - see questions and answers as they're posted!
+              </span>
+            )}
           </p>
           
           {/* Authentication prompt for non-logged users */}
@@ -129,16 +183,14 @@ const Index = () => {
             <div className="relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder={user ? "Search for questions, tags, or topics..." : "Sign in to search questions..."}
+                placeholder="Search for questions, tags, or topics..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-12 h-12 text-lg"
-                disabled={!user}
               />
               <Button 
                 type="submit" 
                 className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                disabled={!user}
               >
                 Search
               </Button>
@@ -177,10 +229,17 @@ const Index = () => {
         {/* Featured Questions */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold">Featured Questions</h2>
+            <div className="flex items-center gap-4">
+              <h2 className="text-2xl font-semibold">Featured Questions</h2>
+              {isConnected && (
+                <Badge variant="outline" className="text-green-600 border-green-600">
+                  Live Updates
+                </Badge>
+              )}
+            </div>
             <Button 
               variant="outline" 
-              onClick={() => handleProtectedAction(() => navigate('/questions'))}
+              onClick={() => navigate('/questions')}
             >
               View All Questions
             </Button>
@@ -190,20 +249,12 @@ const Index = () => {
             {featuredQuestions.map((question) => (
               <Card 
                 key={question.id} 
-                className={`hover:shadow-md transition-shadow ${user ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'}`}
+                className={`hover:shadow-md transition-shadow cursor-pointer ${
+                  (question as any).isNew ? 'border-l-4 border-green-500 bg-green-50/50' : ''
+                }`}
                 onClick={() => handleQuestionClick(question.id)}
               >
                 <CardContent className="p-6">
-                  {!user && (
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center rounded-lg">
-                      <div className="text-center space-y-2">
-                        <p className="text-sm text-muted-foreground">Sign in to view question details</p>
-                        <Button size="sm" onClick={(e) => { e.stopPropagation(); setShowAuthDialog(true); }}>
-                          Sign In
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                   <div className="flex gap-6 relative">
                     {/* Stats */}
                     <div className="flex flex-col items-center space-y-2 text-sm text-muted-foreground min-w-[80px]">

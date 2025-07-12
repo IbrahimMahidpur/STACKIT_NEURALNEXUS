@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   Home, 
   MessageSquare, 
@@ -10,11 +10,23 @@ import {
   BarChart3,
   Moon,
   Sun,
-  Filter
+  Filter,
+  User,
+  Settings,
+  LogOut,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
@@ -25,6 +37,7 @@ import {
 import { SearchBar } from './SearchBar';
 import { NotificationDropdown } from './NotificationDropdown';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardProps {
   children: React.ReactNode;
@@ -40,6 +53,7 @@ const Dashboard = ({ children }: DashboardProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { user, logout } = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [filters, setFilters] = useState<FilterOptions>({
     sortBy: 'newest',
@@ -97,11 +111,20 @@ const Dashboard = ({ children }: DashboardProps) => {
     console.log('Applied filters:', newFilters);
   };
 
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: 'Logged out successfully',
+      description: 'You have been logged out of your account.'
+    });
+    navigate('/');
+  };
+
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
       <div className="flex bg-background text-foreground">
         {/* Sidebar */}
-        <aside className="w-64 bg-card border-r border-border min-h-screen">
+        <aside className="w-64 bg-card border-r border-border min-h-screen fixed left-0 top-0 z-40">
           <div className="p-6">
             <h1 className="text-2xl font-bold text-primary">StackIt</h1>
             <p className="text-sm text-muted-foreground mt-1">Knowledge Community</p>
@@ -178,9 +201,9 @@ const Dashboard = ({ children }: DashboardProps) => {
         </aside>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          {/* Top Header */}
-          <header className="bg-card border-b border-border px-6 py-4">
+        <div className="flex-1 flex flex-col ml-64">
+          {/* Top Header - Fixed */}
+          <header className="bg-card border-b border-border px-6 py-4 fixed top-0 right-0 left-64 z-50">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4 flex-1">
                 {/* Search */}
@@ -242,7 +265,7 @@ const Dashboard = ({ children }: DashboardProps) => {
 
               <div className="flex items-center space-x-4">
                 {/* Notifications */}
-                <NotificationDropdown />
+                {user && <NotificationDropdown />}
 
                 {/* Dark Mode Toggle */}
                 <Button variant="ghost" size="sm" onClick={toggleDarkMode}>
@@ -253,12 +276,69 @@ const Dashboard = ({ children }: DashboardProps) => {
                 <Button onClick={() => navigate('/ask')}>
                   Ask Question
                 </Button>
+
+                {/* Profile Avatar/Button */}
+                {user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="flex items-center space-x-2 p-2 hover:bg-accent hover:text-accent-foreground transition-colors">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={user.avatar} alt={user.name} />
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {user.name.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="hidden lg:block text-left">
+                          <div className="text-sm font-medium">{user.name}</div>
+                          <div className="text-xs text-muted-foreground">{user.reputation} rep</div>
+                        </div>
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile" className="flex items-center space-x-2">
+                          <User className="w-4 h-4" />
+                          <span>My Profile</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/my-questions" className="flex items-center space-x-2">
+                          <MessageSquare className="w-4 h-4" />
+                          <span>My Questions</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/my-answers" className="flex items-center space-x-2">
+                          <MessageSquare className="w-4 h-4" />
+                          <span>My Answers</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/settings" className="flex items-center space-x-2">
+                          <Settings className="w-4 h-4" />
+                          <span>Settings</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleLogout} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Logout
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/login')} className="hover:bg-accent hover:text-accent-foreground transition-colors">
+                    <User className="w-4 h-4 mr-2" />
+                    Sign In
+                  </Button>
+                )}
               </div>
             </div>
           </header>
 
-          {/* Page Content */}
-          <main className="flex-1 p-6 bg-background">
+          {/* Page Content - Adjusted for fixed header */}
+          <main className="flex-1 p-6 bg-background mt-16">
             {children}
           </main>
         </div>

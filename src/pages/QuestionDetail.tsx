@@ -1,7 +1,7 @@
 
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowUp, ArrowDown, Share, Bookmark, Flag, MessageSquare, CheckCircle, Clock, Eye, ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowUp, ArrowDown, Share, Bookmark, Flag, MessageSquare, CheckCircle, Clock, Eye, ArrowLeft, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -10,15 +10,31 @@ import { Separator } from '@/components/ui/separator';
 import Header from '@/components/Header';
 import RichTextEditor from '@/components/RichTextEditor';
 import AnswerCard from '@/components/AnswerCard';
+import { useRealtimeQuestions } from '@/hooks/useRealtimeQuestions';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const QuestionDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { 
+    currentQuestion, 
+    currentAnswers, 
+    isLoading, 
+    isConnected,
+    handlePostAnswer, 
+    handleVoteQuestion, 
+    handleVoteAnswer,
+    setQuestion,
+    setAnswers
+  } = useRealtimeQuestions();
+  
   const [newAnswer, setNewAnswer] = useState('');
-  const [questionVotes, setQuestionVotes] = useState(15);
   const [userVote, setUserVote] = useState<'up' | 'down' | null>(null);
 
-  // Mock question data
-  const question = {
+  // Mock question data - in a real app, this would come from an API
+  const mockQuestion = {
     id: parseInt(id || '1'),
     title: "How to implement a binary search tree in JavaScript?",
     description: `I'm learning data structures and need help understanding how to properly implement a BST with insertion, deletion, and search methods.
@@ -63,14 +79,14 @@ I understand the basic concept but I'm struggling with the recursive implementat
       reputation: 2840,
       joinDate: "2023-01-15"
     },
-    votes: questionVotes,
+    votes: 15,
     views: 284,
     timeAgo: "2 hours ago",
     createdAt: "2024-01-15T10:30:00Z"
   };
 
-  // Mock answers data
-  const answers = [
+  // Mock answers data - in a real app, this would come from an API
+  const mockAnswers = [
     {
       id: 1,
       content: `Here's a complete implementation of a Binary Search Tree in JavaScript:
@@ -260,27 +276,75 @@ Some developers find the iterative approach easier to debug, especially when sta
     }
   ];
 
+  // Initialize question and answers on component mount
+  useEffect(() => {
+    setQuestion(mockQuestion);
+    setAnswers(mockAnswers);
+  }, [id, setQuestion, setAnswers]);
+
   const handleVote = (type: 'up' | 'down') => {
+    if (!user) {
+      toast.error('Please sign in to vote');
+      return;
+    }
+
+    if (!isConnected) {
+      toast.error('Not connected to real-time service');
+      return;
+    }
+
     if (userVote === type) {
       // Remove vote
-      setQuestionVotes(prev => prev + (type === 'up' ? -1 : 1));
       setUserVote(null);
     } else {
       // Add vote or change vote
-      const change = type === 'up' ? 1 : -1;
-      const previousChange = userVote === 'up' ? -1 : userVote === 'down' ? 1 : 0;
-      setQuestionVotes(prev => prev + change + previousChange);
       setUserVote(type);
+    }
+
+    if (currentQuestion) {
+      handleVoteQuestion(currentQuestion.id, type);
     }
   };
 
-  const handleSubmitAnswer = () => {
-    if (newAnswer.trim()) {
-      // Handle answer submission
-      console.log('Submitting answer:', newAnswer);
+  const handleSubmitAnswer = async () => {
+    if (!user) {
+      toast.error('Please sign in to post an answer');
+      return;
+    }
+
+    if (!newAnswer.trim()) {
+      toast.error('Please enter an answer');
+      return;
+    }
+
+    if (!isConnected) {
+      toast.error('Not connected to real-time service');
+      return;
+    }
+
+    if (!currentQuestion) {
+      toast.error('Question not found');
+      return;
+    }
+
+    const answerData = {
+      content: newAnswer.trim(),
+      author: {
+        name: user.name,
+        avatar: user.avatar || "/placeholder.svg",
+        reputation: user.reputation
+      }
+    };
+
+    const success = await handlePostAnswer(currentQuestion.id, answerData);
+    
+    if (success) {
       setNewAnswer('');
     }
   };
+
+  const question = currentQuestion || mockQuestion;
+  const answers = currentAnswers || mockAnswers;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -305,9 +369,25 @@ Some developers find the iterative approach easier to debug, especially when sta
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                      {question.title}
-                    </h1>
+                    <div className="flex items-center gap-4 mb-4">
+                      <h1 className="text-2xl font-bold text-gray-900">
+                        {question.title}
+                      </h1>
+                      {/* Connection Status */}
+                      <div className="flex items-center gap-2">
+                        {isConnected ? (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <Wifi className="w-4 h-4" />
+                            <span className="text-sm">Live</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-600">
+                            <WifiOff className="w-4 h-4" />
+                            <span className="text-sm">Offline</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     
                     <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                       <div className="flex items-center gap-1">
@@ -339,18 +419,22 @@ Some developers find the iterative approach easier to debug, especially when sta
                       variant={userVote === 'up' ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => handleVote('up')}
+                      disabled={!isConnected || !user}
+                      title={!user ? 'Sign in to vote' : ''}
                     >
                       <ArrowUp className="w-5 h-5" />
                     </Button>
                     
                     <span className="text-lg font-semibold text-gray-900">
-                      {questionVotes}
+                      {question.votes}
                     </span>
                     
                     <Button
                       variant={userVote === 'down' ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => handleVote('down')}
+                      disabled={!isConnected || !user}
+                      title={!user ? 'Sign in to vote' : ''}
                     >
                       <ArrowDown className="w-5 h-5" />
                     </Button>
@@ -419,7 +503,11 @@ Some developers find the iterative approach easier to debug, especially when sta
               <div className="space-y-6">
                 {answers.map((answer, index) => (
                   <div key={answer.id}>
-                    <AnswerCard answer={answer} />
+                    <AnswerCard 
+                      answer={answer} 
+                      onVote={(voteType) => handleVoteAnswer(answer.id, voteType)}
+                      isConnected={isConnected}
+                    />
                     {index < answers.length - 1 && <Separator className="my-6" />}
                   </div>
                 ))}
@@ -427,33 +515,54 @@ Some developers find the iterative approach easier to debug, especially when sta
             </div>
 
             {/* Answer Form */}
-            <Card>
-              <CardHeader>
-                <h3 className="text-lg font-semibold">Your Answer</h3>
-                <p className="text-sm text-gray-600">
-                  Please provide a detailed answer with code examples if applicable.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <RichTextEditor
-                  value={newAnswer}
-                  onChange={setNewAnswer}
-                  placeholder="Write your answer here. Include code examples, explanations, and any relevant details..."
-                />
-                
-                <div className="flex gap-4">
-                  <Button 
-                    onClick={handleSubmitAnswer}
-                    disabled={!newAnswer.trim()}
-                  >
-                    Post Your Answer
-                  </Button>
-                  <Button variant="outline">
-                    Save Draft
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            {user ? (
+              <Card>
+                <CardHeader>
+                  <h3 className="text-lg font-semibold">Your Answer</h3>
+                  <p className="text-sm text-gray-600">
+                    Please provide a detailed answer with code examples if applicable.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <RichTextEditor
+                    value={newAnswer}
+                    onChange={setNewAnswer}
+                    placeholder="Write your answer here. Include code examples, explanations, and any relevant details..."
+                  />
+                  
+                  <div className="flex gap-4">
+                    <Button 
+                      onClick={handleSubmitAnswer}
+                      disabled={!newAnswer.trim() || isLoading || !isConnected}
+                    >
+                      {isLoading ? 'Posting...' : 'Post Your Answer'}
+                    </Button>
+                    <Button variant="outline">
+                      Save Draft
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Sign in to Answer</h3>
+                    <p className="text-sm text-gray-600">
+                      You need to be signed in to post an answer to this question.
+                    </p>
+                    <div className="flex justify-center space-x-4">
+                      <Button onClick={() => navigate('/login')}>
+                        Sign In
+                      </Button>
+                      <Button variant="outline" onClick={() => navigate('/signup')}>
+                        Sign Up
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}

@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface Answer {
   id: number;
@@ -28,24 +30,37 @@ interface Answer {
 
 interface AnswerCardProps {
   answer: Answer;
+  onVote?: (voteType: 'up' | 'down') => void;
+  isConnected?: boolean;
 }
 
-const AnswerCard = ({ answer }: AnswerCardProps) => {
-  const [votes, setVotes] = useState(answer.votes);
+const AnswerCard = ({ answer, onVote, isConnected = true }: AnswerCardProps) => {
+  const { user } = useAuth();
   const [userVote, setUserVote] = useState<'up' | 'down' | null>(null);
   const [showComments, setShowComments] = useState(false);
 
   const handleVote = (type: 'up' | 'down') => {
+    if (!user) {
+      toast.error('Please sign in to vote');
+      return;
+    }
+
+    if (!isConnected) {
+      toast.error('Not connected to real-time service');
+      return;
+    }
+
     if (userVote === type) {
       // Remove vote
-      setVotes(prev => prev + (type === 'up' ? -1 : 1));
       setUserVote(null);
     } else {
       // Add vote or change vote
-      const change = type === 'up' ? 1 : -1;
-      const previousChange = userVote === 'up' ? -1 : userVote === 'down' ? 1 : 0;
-      setVotes(prev => prev + change + previousChange);
       setUserVote(type);
+    }
+
+    // Call the parent's onVote handler
+    if (onVote) {
+      onVote(type);
     }
   };
 
@@ -67,18 +82,22 @@ const AnswerCard = ({ answer }: AnswerCardProps) => {
             variant={userVote === 'up' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => handleVote('up')}
+            disabled={!isConnected || !user}
+            title={!user ? 'Sign in to vote' : ''}
           >
             <ArrowUp className="w-5 h-5" />
           </Button>
           
           <span className={`text-lg font-semibold ${answer.accepted ? 'text-green-600' : 'text-gray-900'}`}>
-            {votes}
+            {answer.votes}
           </span>
           
           <Button
             variant={userVote === 'down' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => handleVote('down')}
+            disabled={!isConnected || !user}
+            title={!user ? 'Sign in to vote' : ''}
           >
             <ArrowDown className="w-5 h-5" />
           </Button>
