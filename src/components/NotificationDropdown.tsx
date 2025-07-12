@@ -7,7 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuHeader,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -91,7 +91,7 @@ export const NotificationDropdown = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuHeader className="p-3 flex items-center justify-between">
+        <DropdownMenuLabel className="p-3 flex items-center justify-between">
           <span className="font-semibold">Notifications</span>
           {unreadCount > 0 && (
             <Button variant="ghost" size="sm" onClick={markAllAsRead}>
@@ -99,7 +99,7 @@ export const NotificationDropdown = () => {
               Mark all read
             </Button>
           )}
-        </DropdownMenuHeader>
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
         {notifications.length === 0 ? (
